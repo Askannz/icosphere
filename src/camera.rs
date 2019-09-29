@@ -1,7 +1,11 @@
+use std::cmp::{min, max};
+use ordered_float::OrderedFloat;
 use three::object::Object;
 
 const R_INIT: f32 = 3.0;
-const ZOOM_RATE: f32 = 0.1;
+const R_MIN: f32 = 2.0;
+const R_MAX: f32 = 8.0;
+const ZOOM_RATE: f32 = 0.02;
 
 pub struct Camera {
     pub three_camera: three::camera::Camera,
@@ -19,7 +23,8 @@ impl Camera {
 
     pub fn update(&mut self, mouse_pos_ndc: mint::Point2<f32>, mouse_wheel: f32) {
 
-        self.r += mouse_wheel * ZOOM_RATE;
+        let r = self.r + mouse_wheel * ZOOM_RATE;
+        self.r = min(OrderedFloat(R_MAX), max(OrderedFloat(R_MIN), OrderedFloat(r))).into_inner();
 
         let mint::Point2 {x: mx, y: my} = mouse_pos_ndc;
         let ax = mx * std::f32::consts::PI;
