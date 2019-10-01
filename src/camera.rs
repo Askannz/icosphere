@@ -1,15 +1,12 @@
-use std::cmp::{min, max};
-use ordered_float::OrderedFloat;
 use three::object::Object;
 
 const R_INIT: f32 = 3.0;
-const R_MIN: f32 = 2.0;
-const R_MAX: f32 = 8.0;
-const ZOOM_RATE: f32 = 0.02;
+const ZOOM_RATE: f32 = 0.1;
 
 pub struct Camera {
     pub three_camera: three::camera::Camera,
-    r: f32
+    r: f32,
+    smooth_r : f32
 }
 
 impl Camera {
@@ -18,21 +15,21 @@ impl Camera {
 
         let three_camera = three_factory.perspective_camera(60.0, 1.0..1000.0);
 
-        Camera { three_camera, r: R_INIT }
+        Camera { three_camera, r: R_INIT, smooth_r: R_INIT }
     }
 
     pub fn update(&mut self, mouse_pos_ndc: mint::Point2<f32>, mouse_wheel: f32) {
 
-        let r = self.r + mouse_wheel * ZOOM_RATE;
-        self.r = min(OrderedFloat(R_MAX), max(OrderedFloat(R_MIN), OrderedFloat(r))).into_inner();
+        self.r =  (1.0 / (  (1.0/self.r) *(1.0 + 0.01* mouse_wheel ))).max(2.13);
+        self.smooth_r = self.smooth_r*0.9 + self.r*0.1;
 
         let mint::Point2 {x: mx, y: my} = mouse_pos_ndc;
         let ax = mx * std::f32::consts::PI;
         let ay = my * std::f32::consts::PI/2.0;
 
-        let x = self.r * f32::cos(ay) * f32::cos(ax);
-        let y = self.r * f32::cos(ay) * f32::sin(ax);
-        let z = self.r * f32::sin(ay);
+        let x = self.smooth_r * f32::cos(ay) * f32::cos(ax);
+        let y = self.smooth_r * f32::cos(ay) * f32::sin(ax);
+        let z = self.smooth_r * f32::sin(ay);
 
         self.three_camera.look_at([x, y, z],
                                   [0.0, 0.0, 0.0],
