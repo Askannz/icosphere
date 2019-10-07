@@ -1,6 +1,6 @@
 use std::f32;
 use std::f32::consts::PI;
-use mint::Point3;
+use mint::{Point3, Vector3};
 
 pub struct Icosphere {
     pub faces: Vec<Face>,
@@ -61,7 +61,7 @@ impl Icosphere {
 
         let mut new_faces: Vec<Face> = Vec::new();
         for face in self.faces.iter() {
-            new_faces.append(&mut subdivide_face(face, self.iteration));
+            new_faces.append(&mut subdivide_face(face));
         }
 
         Icosphere { faces: new_faces, iteration: self.iteration + 1 }
@@ -96,13 +96,13 @@ fn make_points_ring(top: bool) -> Vec<Point3<f32>> {
     points
 }
 
-fn subdivide_face(face: &Face, iteration: usize) -> Vec<Face> {
+fn subdivide_face(face: &Face) -> Vec<Face> {
 
     let [p1, p2, p3] = &face.points;
 
-    let pm1 = correct_distance(middle(*p1, *p2), iteration);
-    let pm2 = correct_distance(middle(*p2, *p3), iteration);
-    let pm3 = correct_distance(middle(*p3, *p1), iteration);
+    let pm1 = subdivide_edge(*p1, *p2);
+    let pm2 = subdivide_edge(*p2, *p3);
+    let pm3 = subdivide_edge(*p3, *p1);
 
     let face1 = Face { points: [*p1, pm1, pm3] };
     let face2 = Face { points: [pm1, *p2, pm2] };
@@ -113,16 +113,21 @@ fn subdivide_face(face: &Face, iteration: usize) -> Vec<Face> {
 
 }
 
-fn middle(p1: Point3<f32>, p2: Point3<f32>) -> Point3<f32> {
-    Point3 { x: (p1.x + p2.x) / 2.0,
-             y: (p1.y + p2.y) / 2.0,
-             z: (p1.z + p2.z) / 2.0 }
-}
+fn subdivide_edge(pa: Point3<f32>, pb: Point3<f32>) -> Point3<f32> {
 
-fn correct_distance(p: Point3<f32>, iteration: usize) -> Point3<f32> {
-    let n = iteration as i32;
-    let f = 1.0 / f32::sqrt(1.0 - 0.25 * f32::powi(2.0, -2*n));
-    Point3 { x: f * p.x,
-             y: f * p.y,
-             z: f * p.z, }
+    let v_m_ab = Vector3 {
+        x: 0.5 * (pa.x + pb.x),
+        y: 0.5 * (pa.y + pb.y),
+        z: 0.5 * (pa.z + pb.z),
+    };
+
+    let norm = f32::sqrt(f32::powi(v_m_ab.x, 2) + 
+                         f32::powi(v_m_ab.y, 2) +
+                         f32::powi(v_m_ab.z, 2));
+
+    Point3 {
+        x: v_m_ab.x / norm,
+        y: v_m_ab.y / norm,
+        z: v_m_ab.z / norm
+    }
 }
